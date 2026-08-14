@@ -1,0 +1,288 @@
+/* Aether Control v1.3 — permanent dark-blue console theme.
+   Loaded last so the original 7-inch geometry stays intact while the visual
+   language matches the desktop Aether dashboard. */
+:root {
+  --green: #0b70c9;
+  --green2: #1597ee;
+  --ink: #dbeeff;
+  --shadow: 0 9px 26px rgba(0, 10, 24, .5), inset 0 0 0 1px rgba(91, 180, 255, .08);
+  --blue: #179cff;
+  --blue-bright: #55bdff;
+  --blue-deep: #071a31;
+  --panel: rgba(7, 23, 42, .9);
+  --panel-2: rgba(10, 35, 61, .92);
+}
+
+html, body {
+  background: #020914;
+  color: #dbeeff;
+}
+
+.shell,
+body.dark-mode .shell {
+  background:
+    radial-gradient(circle at 50% -25%, rgba(38, 139, 224, .25), transparent 45%),
+    radial-gradient(circle at 14% 118%, rgba(19, 107, 188, .18), transparent 42%),
+    linear-gradient(180deg, #071321 0%, #050d18 42%, #020812 100%);
+  color: #dbeeff;
+}
+
+.shell:before,
+.shell:after {
+  border-color: rgba(33, 139, 226, .11);
+  filter: blur(.2px);
+}
+
+.ambient {
+  border-color: rgba(53, 155, 235, .08);
+}
+
+.ambient-a { opacity: .44; }
+.ambient-b { opacity: .3; }
+
+.ring-cloud { opacity: .55; }
+.ring-cloud i {
+  border-color: #168fe6;
+  background: rgba(6, 31, 53, .6);
+  box-shadow: 0 0 14px rgba(23, 156, 255, .18);
+}
+
+.tab,
+body.dark-mode .tab {
+  color: #68859d;
+  text-shadow: none;
+}
+
+.tab.active,
+body.dark-mode .tab.active {
+  color: #e7f6ff;
+  text-shadow: 0 0 14px rgba(54, 169, 255, .3);
+}
+
+.tab.active:after {
+  height: 3px;
+  background: linear-gradient(90deg, #148fe7, #58c5ff);
+  box-shadow: 0 0 9px rgba(41, 166, 255, .55);
+}
+
+.status-strip,
+.footer,
+body.dark-mode .status-strip,
+body.dark-mode .footer {
+  color: #7895aa;
+}
+
+.mini-dot,
+.state-dot,
+.quick-dot {
+  background: #516b7d;
+}
+
+.mini-status.online .mini-dot,
+.power-tile.state-on .state-dot,
+.quick-dot {
+  background: #2baaff;
+  box-shadow: 0 0 8px rgba(43, 170, 255, .55);
+}
+
+.quick-dot.offline,
+.power-tile.state-error .state-dot {
+  background: #ff5147;
+  box-shadow: 0 0 8px rgba(255, 81, 71, .5);
+}
+
+.quick-dot.muted {
+  background: #587083;
+  box-shadow: none;
+}
+
+.tile {
+  border: 1px solid rgba(87, 169, 230, .12);
+  border-radius: 6px;
+  box-shadow: var(--shadow);
+}
+
+.tile:active {
+  transform: scale(.975);
+  filter: brightness(1.12);
+}
+
+.rack-tile {
+  background:
+    linear-gradient(90deg, rgba(24, 128, 204, .12), transparent 42%),
+    linear-gradient(135deg, #0c2a45, #071c31 58%, #03101d);
+}
+
+.rack-art span {
+  border-color: rgba(91, 190, 255, .18);
+  background: repeating-linear-gradient(180deg, rgba(5, 19, 31, .96) 0 7%, rgba(23, 103, 151, .75) 7.5% 9%, rgba(3, 12, 22, .98) 9.5% 13%);
+}
+
+.aether-tile {
+  background:
+    radial-gradient(circle at 54% 33%, rgba(31, 160, 255, .28), transparent 31%),
+    linear-gradient(145deg, #0b2d4b, #071d34 55%, #03111f);
+}
+
+.a-mark {
+  color: #d0f1ff;
+  text-shadow: 0 0 10px #2aa8ff, 0 0 28px rgba(31, 160, 255, .7);
+}
+
+.tile-status {
+  color: #60c5ff;
+}
+
+.green-tile,
+body.dark-mode .green-tile {
+  background:
+    linear-gradient(145deg, rgba(27, 148, 224, .96), rgba(13, 103, 174, .96) 50%, rgba(7, 62, 112, .98));
+  text-shadow: 0 1px 2px rgba(0, 20, 39, .4);
+}
+
+.green-tile:before,
+.system-card:before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(145deg, rgba(255,255,255,.10), transparent 34%, transparent 70%, rgba(0,0,0,.16));
+}
+
+.power-tile.state-off.green-tile,
+.power-tile.state-off.tile-feature {
+  filter: saturate(.35) brightness(.52);
+}
+
+.power-tile.state-error {
+  box-shadow: inset 0 0 0 2px rgba(255, 76, 66, .88), 0 8px 22px rgba(45, 6, 5, .42);
+}
+
+/* The update tile stays visually distinct without leaving the blue palette. */
+.update-tile {
+  background: linear-gradient(145deg, #197dc6, #0c5d9c 52%, #073c6c) !important;
+}
+.update-tile.busy {
+  filter: brightness(.78) saturate(.7);
+  pointer-events: none;
+}
+.update-tile.busy .tile-icon {
+  animation: update-spin 1.1s linear infinite;
+}
+@keyframes update-spin { to { transform: translateX(-50%) rotate(360deg); } }
+
+/* Weather stays blue until NWS has something worth interrupting for. */
+.temp-tile,
+body.dark-mode .temp-tile {
+  background: linear-gradient(145deg, #196fae, #0f568d 52%, #08385f) !important;
+}
+body:has(.weather-alert.show) .temp-tile,
+body.dark-mode:has(.weather-alert.show) .temp-tile {
+  background: linear-gradient(145deg, #a42c25, #741c18 55%, #45110f) !important;
+}
+
+.log-actions select,
+.glass-button {
+  border-color: rgba(82, 169, 229, .25);
+  background: rgba(7, 25, 43, .82);
+  color: #c7e7fa;
+}
+
+.log-entry,
+body.dark-mode .log-entry {
+  background: rgba(7, 24, 41, .9);
+  border: 1px solid rgba(61, 132, 184, .12);
+  color: #d5ebf7;
+}
+
+.log-empty {
+  background: rgba(8, 27, 46, .72);
+  color: #7da2b9;
+}
+
+.log-entry.success .log-accent { background: #1d9be9; }
+.log-entry.warning .log-accent { background: #e4a93b; }
+.log-entry.error .log-accent { background: #ec5249; }
+.log-time { color: #68869b; }
+
+.system-host {
+  background: rgba(12, 43, 70, .8);
+  border-color: rgba(80, 169, 229, .22);
+}
+
+.green-card,
+.blue-card {
+  background: linear-gradient(145deg, #1478bd, #0a528b 55%, #06385f);
+}
+
+.dark-card {
+  background: linear-gradient(145deg, #0b2d4b, #061d32 58%, #03111e);
+  border: 1px solid rgba(72, 151, 207, .12);
+}
+
+.meter { background: rgba(255,255,255,.12); }
+.meter i {
+  background: linear-gradient(90deg, #1a95e8, #66c8ff);
+  box-shadow: 0 0 8px rgba(52, 175, 255, .5);
+}
+
+.system-note,
+.eyebrow { color: #62879f; }
+
+.brand-mark {
+  border-color: #2ba9ff;
+  color: #bce8ff;
+  box-shadow: 0 0 12px rgba(43, 169, 255, .2);
+}
+
+.page-dots i { background: #46677e; }
+.page-dots i.active {
+  background: #28a6f8;
+  box-shadow: 0 0 7px rgba(40, 166, 248, .45);
+}
+
+.modal-backdrop {
+  background: rgba(0, 6, 14, .7);
+}
+
+.modal-card,
+body.dark-mode .modal-card {
+  background: linear-gradient(180deg, #0d2a42, #061725);
+  border: 1px solid rgba(86, 177, 238, .2);
+  color: #e2f3fc;
+  box-shadow: 0 22px 70px rgba(0,0,0,.55);
+}
+
+.modal-copy { color: #89a7b9; }
+.modal-button.cancel {
+  background: #16364c;
+  color: #b8d7e8;
+}
+.modal-button.danger {
+  background: linear-gradient(145deg, #c4443a, #84241f);
+  color: #fff;
+}
+
+.toast {
+  background: rgba(6, 31, 51, .96);
+  border: 1px solid rgba(70, 165, 227, .22);
+  box-shadow: 0 8px 28px rgba(0,0,0,.45);
+}
+
+.weather-alert {
+  background: rgba(37, 4, 4, .9);
+}
+
+.weather-detail {
+  background: rgba(0, 7, 15, .86) !important;
+}
+.weather-detail-card {
+  background: linear-gradient(180deg, #102b40, #071623) !important;
+  border-color: rgba(91, 181, 238, .2) !important;
+  color: #e7f5fc !important;
+}
+
+@media (max-height: 520px) {
+  .tile { border-radius: 4px; }
+  .footer { color: #607f93; }
+}
