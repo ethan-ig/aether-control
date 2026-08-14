@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#dff5ff">
+  <title>Aether Control</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="shell" id="shell">
+    <div class="ambient ambient-a"></div>
+    <div class="ambient ambient-b"></div>
+    <div class="ring-cloud" aria-hidden="true">
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+    </div>
+
+    <header class="topbar">
+      <nav class="tabs" aria-label="Dashboard pages">
+        <button class="tab active" data-page="0">home</button>
+        <button class="tab" data-page="1">logs</button>
+        <button class="tab" data-page="2">system</button>
+      </nav>
+      <div class="status-strip">
+        <span class="mini-status" id="headerNetwork"><span class="mini-dot"></span>net</span>
+        <span class="header-temp" id="headerTemp">--°</span>
+        <span class="clock" id="clock">--:--</span>
+      </div>
+    </header>
+
+    <main class="viewport" id="viewport">
+      <div class="pages" id="pages">
+        <section class="page page-home" data-page-index="0" aria-label="Home">
+          <div class="feature-grid">
+            <button class="tile tile-feature rack-tile power-tile" data-device="server-rack" data-label="Server Rack">
+              <div class="rack-art" aria-hidden="true">
+                <span></span><span></span><span></span><span></span><span></span>
+              </div>
+              <div class="tile-shine"></div>
+              <div class="feature-icon server-icon" aria-hidden="true">
+                <svg viewBox="0 0 64 64"><rect x="10" y="9" width="44" height="13" rx="3"/><rect x="10" y="26" width="44" height="13" rx="3"/><rect x="10" y="43" width="44" height="13" rx="3"/><circle cx="17" cy="15.5" r="2"/><circle cx="17" cy="32.5" r="2"/><circle cx="17" cy="49.5" r="2"/></svg>
+              </div>
+              <div class="tile-copy">
+                <div class="tile-title">Server Rack</div>
+                <div class="tile-status"><span class="state-dot"></span><span class="state-text">LOADING</span></div>
+              </div>
+              <div class="touch-hint">tap to power</div>
+            </button>
+
+            <button class="tile tile-feature aether-tile power-tile" data-device="aether" data-label="Aether">
+              <div class="aether-art" aria-hidden="true"><div class="a-mark">A</div></div>
+              <div class="tile-shine"></div>
+              <div class="tile-copy">
+                <div class="tile-title">Aether</div>
+                <div class="tile-status"><span class="state-dot"></span><span class="state-text">LOADING</span></div>
+              </div>
+              <div class="touch-hint">tap to power</div>
+            </button>
+
+            <div class="side-stack">
+              <button class="tile green-tile compact power-tile" data-device="tv" data-label="TV">
+                <svg class="tile-icon" viewBox="0 0 64 64" aria-hidden="true"><rect x="8" y="12" width="48" height="32" rx="3"/><path d="M24 53h16M32 44v9"/></svg>
+                <div class="compact-title">TV</div>
+                <div class="compact-status"><span class="state-dot"></span><span class="state-text">...</span></div>
+              </button>
+              <button class="tile green-tile compact power-tile" data-device="setup" data-label="Setup">
+                <svg class="tile-icon" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 8l5 7 9-1 3 9 8 4-4 8 4 8-8 4-3 9-9-1-5 7-5-7-9 1-3-9-8-4 4-8-4-8 8-4 3-9 9 1z"/><circle cx="32" cy="35" r="10"/></svg>
+                <div class="compact-title">Setup</div>
+                <div class="compact-status"><span class="state-dot"></span><span class="state-text">...</span></div>
+              </button>
+            </div>
+          </div>
+
+          <div class="quick-grid">
+            <button class="tile green-tile quick-tile" data-action="home-placeholder">
+              <svg class="tile-icon" viewBox="0 0 64 64" aria-hidden="true"><path d="M8 31L32 10l24 21v24H39V39H25v16H8z"/></svg>
+              <div class="quick-title">My Home</div>
+              <div class="quick-status"><span class="quick-dot"></span><span>4 plugs</span></div>
+            </button>
+            <button class="tile green-tile quick-tile" data-action="network">
+              <svg class="tile-icon" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="23"/><path d="M9 32h46M32 9c8 8 12 15 12 23S40 47 32 55M32 9c-8 8-12 15-12 23s4 15 12 23"/></svg>
+              <div class="quick-title">Network</div>
+              <div class="quick-status"><span class="quick-dot" id="networkDot"></span><span id="networkText">checking</span></div>
+            </button>
+            <button class="tile green-tile quick-tile" data-action="media-placeholder">
+              <svg class="tile-icon" viewBox="0 0 64 64" aria-hidden="true"><rect x="8" y="15" width="48" height="34" rx="6"/><path d="M28 24l15 8-15 8z"/></svg>
+              <div class="quick-title">Media</div>
+              <div class="quick-status"><span class="quick-dot muted"></span><span>next</span></div>
+            </button>
+            <button class="tile green-tile quick-tile" data-action="scenes-placeholder">
+              <svg class="tile-icon" viewBox="0 0 64 64" aria-hidden="true"><rect x="10" y="19" width="44" height="32" rx="2"/><path d="M13 19l7-9 8 9 8-9 8 9 7-9"/><path d="M10 29h44"/></svg>
+              <div class="quick-title">Scenes</div>
+              <div class="quick-status"><span class="quick-dot muted"></span><span>next</span></div>
+            </button>
+            <button class="tile green-tile quick-tile temp-tile" data-action="temp">
+              <svg class="tile-icon thermometer" viewBox="0 0 64 64" aria-hidden="true"><path d="M27 13a5 5 0 0110 0v25a12 12 0 11-10 0z"/><path d="M32 19v25"/></svg>
+              <div class="temp-label">Rack Temp</div>
+              <div class="temp-value" id="rackTemp">--°</div>
+              <div class="quick-status"><span class="quick-dot" id="tempDot"></span><span id="humidityText">--% RH</span></div>
+            </button>
+          </div>
+        </section>
+
+        <section class="page page-logs" data-page-index="1" aria-label="Logs">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">controller history</div>
+              <h1>logs</h1>
+            </div>
+            <div class="log-actions">
+              <select id="logFilter" aria-label="Filter logs">
+                <option value="all">all</option>
+                <option value="success">success</option>
+                <option value="info">info</option>
+                <option value="warning">warning</option>
+                <option value="error">errors</option>
+              </select>
+              <button class="glass-button" id="clearLogs">clear</button>
+            </div>
+          </div>
+          <div class="log-list" id="logList">
+            <div class="log-empty">Loading event history…</div>
+          </div>
+        </section>
+
+        <section class="page page-system" data-page-index="2" aria-label="System">
+          <div class="section-head system-heading">
+            <div>
+              <div class="eyebrow">controller appliance</div>
+              <h1>system</h1>
+            </div>
+            <div class="system-host" id="systemHost">controller</div>
+          </div>
+          <div class="system-grid">
+            <div class="system-card green-card"><span>CPU</span><strong id="cpuValue">--%</strong><div class="meter"><i id="cpuMeter"></i></div></div>
+            <div class="system-card green-card"><span>Memory</span><strong id="memoryValue">--%</strong><div class="meter"><i id="memoryMeter"></i></div></div>
+            <div class="system-card blue-card"><span>Disk</span><strong id="diskValue">--%</strong><div class="meter"><i id="diskMeter"></i></div></div>
+            <div class="system-card blue-card"><span>Uptime</span><strong id="uptimeValue">--</strong><small>Raspberry Pi</small></div>
+            <div class="system-card dark-card"><span>Govee</span><strong id="goveeValue">--</strong><small>Developer API</small></div>
+            <div class="system-card dark-card"><span>Internet</span><strong id="internetValue">--</strong><small>controller link</small></div>
+          </div>
+          <div class="system-note">Aether Control <span>v{{ version }}</span> · local control plane</div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="brand"><span class="brand-mark">A</span><span>AETHER CONTROL</span><b>|</b><small>v{{ version }}</small></div>
+      <div class="page-dots" aria-hidden="true"><i class="active"></i><i></i><i></i></div>
+      <div class="swipe-copy">swipe to navigate</div>
+    </footer>
+  </div>
+
+  <div class="modal-backdrop" id="confirmModal" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-kicker">power control</div>
+      <div class="modal-title" id="modalTitle">Turn off device?</div>
+      <div class="modal-copy" id="modalCopy">This will cut power at the Govee smart plug.</div>
+      <div class="modal-actions">
+        <button class="modal-button cancel" id="modalCancel">cancel</button>
+        <button class="modal-button danger" id="modalConfirm">power off</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="weather-alert" id="weatherAlert" aria-hidden="true">
+    <div class="weather-alert-inner">
+      <div class="weather-alert-kicker" id="weatherSeverity">WEATHER WARNING</div>
+      <div class="weather-alert-event" id="weatherEvent">Weather Alert</div>
+      <div class="weather-alert-headline" id="weatherHeadline"></div>
+      <div class="weather-alert-actions">
+        <button id="weatherDetails">details</button>
+        <button id="weatherDismiss">dismiss</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="weather-detail" id="weatherDetail" aria-hidden="true">
+    <div class="weather-detail-card">
+      <div class="weather-alert-kicker">NATIONAL WEATHER SERVICE</div>
+      <div class="weather-alert-event" id="weatherDetailEvent"></div>
+      <div class="weather-detail-copy" id="weatherDetailCopy"></div>
+      <button id="weatherDetailClose">close</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
