@@ -7,6 +7,7 @@ exec chromium \
   --disable-infobars \
   --disable-session-crashed-bubble \
   --disable-translate \
+  --password-store=basic \
   --overscroll-history-navigation=0 \
   --disable-pinch \
   "$URL"
