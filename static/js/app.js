@@ -12,18 +12,15 @@
   const toast = document.getElementById('toast');
   const logList = document.getElementById('logList');
   const logFilter = document.getElementById('logFilter');
+  const updateButton = document.getElementById('updateButton');
+  const updateText = document.getElementById('updateText');
+  const updateDot = document.getElementById('updateDot');
 
   const weatherAlert = document.getElementById('weatherAlert');
   const weatherDetail = document.getElementById('weatherDetail');
   let currentWeatherAlert = null;
 
-  function applyAutomaticTheme() {
-    const hour = new Date().getHours();
-    const dark = hour >= 20 || hour < 7;
-    document.body.classList.toggle('dark-mode', dark);
-  }
-  applyAutomaticTheme();
-  setInterval(applyAutomaticTheme, 30000);
+  document.body.classList.add('dark-mode');
 
   function weatherAlertKey(alert) {
     return alert?.id || `${alert?.event || ''}|${alert?.headline || ''}|${alert?.expires || ''}`;
@@ -116,7 +113,7 @@
     toast.textContent = message;
     toast.classList.toggle('error', isError);
     toast.classList.add('show');
-    toastTimer = setTimeout(() => toast.classList.remove('show'), 2800);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 3200);
   }
 
   function applyDeviceState(key, state) {
@@ -147,21 +144,30 @@
       const data = await res.json();
       Object.entries(data.devices || {}).forEach(([key, state]) => applyDeviceState(key, state));
 
-      const rackTemp = document.getElementById('rackTemp');
+      const weatherTemp = document.getElementById('rackTemp');
       const headerTemp = document.getElementById('headerTemp');
       const humidityText = document.getElementById('humidityText');
       const tempDot = document.getElementById('tempDot');
-      if (data.rack?.online && data.rack?.temperature !== null && data.rack?.temperature !== undefined) {
-        const value = Number(data.rack.temperature);
-        const shown = Number.isFinite(value) ? Math.round(value) : data.rack.temperature;
-        rackTemp.textContent = `${shown}°${data.rack.unit || 'F'}`;
+      const weather = data.weather || data.rack || {};
+      if (weather.online && weather.temperature !== null && weather.temperature !== undefined) {
+        const value = Number(weather.temperature);
+        const shown = Number.isFinite(value) ? Math.round(value) : weather.temperature;
+        weatherTemp.textContent = `${shown}°${weather.unit || 'F'}`;
         headerTemp.textContent = `${shown}°`;
-        humidityText.textContent = data.rack.humidity == null ? 'sensor online' : `${Math.round(Number(data.rack.humidity))}% RH`;
+        if (weather.alert_count > 0 && weather.top_alert?.event) {
+          humidityText.textContent = weather.top_alert.event;
+        } else if (weather.condition) {
+          humidityText.textContent = weather.condition;
+        } else if (weather.humidity != null) {
+          humidityText.textContent = `${Math.round(Number(weather.humidity))}% RH`;
+        } else {
+          humidityText.textContent = 'NWS online';
+        }
         tempDot.classList.remove('offline');
       } else {
-        rackTemp.textContent = '--°';
+        weatherTemp.textContent = '--°';
         headerTemp.textContent = '--°';
-        humidityText.textContent = 'sensor offline';
+        humidityText.textContent = weather.configured === false ? 'set location' : 'NWS offline';
         tempDot.classList.add('offline');
       }
 
@@ -242,6 +248,41 @@
     sendPower(tile, on);
   });
 
+  if (updateButton) {
+    updateButton.addEventListener('click', async () => {
+      if (updateButton.classList.contains('busy')) return;
+      updateButton.classList.add('busy');
+      updateText.textContent = 'pulling…';
+      updateDot.classList.remove('offline');
+      showToast('Pulling latest Aether Control…');
+
+      try {
+        const res = await fetch('/api/update/pull', {method:'POST', cache:'no-store'});
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
+        if (data.changed) {
+          updateText.textContent = 'downloaded';
+          showToast('Update downloaded · restart to apply backend changes');
+        } else {
+          updateText.textContent = 'current';
+          showToast('Aether Control is already up to date');
+        }
+        if (currentPage === 1) setTimeout(loadLogs, 400);
+      } catch (err) {
+        updateText.textContent = 'failed';
+        updateDot.classList.add('offline');
+        showToast(`Update failed: ${err.message}`, true);
+      } finally {
+        updateButton.classList.remove('busy');
+        setTimeout(() => {
+          updateText.textContent = 'git pull';
+          updateDot.classList.remove('offline');
+        }, 5500);
+      }
+    });
+  }
+
   function logTime(iso) {
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return '';
@@ -318,7 +359,10 @@
     tile.addEventListener('click', () => showToast('Coming in the next Aether Control build'));
   });
   document.querySelector('[data-action="network"]').addEventListener('click', () => setPage(2));
-  document.querySelector('[data-action="temp"]').addEventListener('click', () => showToast('Rack sensor is live'));
+  document.querySelector('[data-action="temp"]').addEventListener('click', () => {
+    const label = document.getElementById('humidityText')?.textContent || 'NWS weather';
+    showToast(`Weather · ${label}`);
+  });
 
   loadDashboard();
   dashboardTimer = setInterval(loadDashboard, 6000);
