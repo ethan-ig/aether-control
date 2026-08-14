@@ -1,0 +1,197 @@
+/*
+ * Aether Control 7-inch layout corrections.
+ * Kept separate from the original theme so touchscreen geometry can evolve
+ * without disturbing the Xbox-360-inspired visual layer.
+ */
+
+.page-home {
+  display: grid;
+  grid-template-rows: minmax(0, 1.85fr) minmax(0, 1fr);
+  gap: clamp(4px, .9vh, 7px);
+}
+
+.feature-grid,
+.quick-grid {
+  height: auto;
+  min-height: 0;
+}
+
+.feature-grid,
+.side-stack,
+.quick-grid,
+.tile {
+  min-width: 0;
+  min-height: 0;
+}
+
+.quick-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, .83fr);
+}
+
+.compact,
+.quick-tile {
+  overflow: hidden;
+}
+
+/* The physical Aether Control panel is short enough that percentage heights
+   plus the inter-row gap could make the rows collide. These rules reserve
+   space explicitly for each row and tighten type/icons before anything can
+   overlap. */
+@media (max-height: 650px) {
+  .topbar {
+    height: 17vh;
+    min-height: 58px;
+    max-height: 82px;
+    padding-top: clamp(7px, 2vh, 14px);
+  }
+
+  .viewport {
+    height: 72vh;
+  }
+
+  .footer {
+    height: 11vh;
+  }
+
+  .page {
+    padding-left: clamp(16px, 5vw, 42px);
+    padding-right: clamp(16px, 5vw, 42px);
+  }
+
+  .page-home {
+    grid-template-rows: minmax(0, 1.72fr) minmax(0, .96fr);
+  }
+
+  .feature-grid {
+    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1.04fr) minmax(0, .58fr);
+  }
+
+  .tile-copy {
+    bottom: 9%;
+  }
+
+  .tile-title {
+    font-size: clamp(19px, 3.6vw, 31px);
+  }
+
+  .tile-status {
+    margin-top: 5px;
+    font-size: clamp(10px, 1.8vw, 15px);
+  }
+
+  .touch-hint {
+    bottom: 5%;
+    font-size: clamp(7px, 1.1vw, 9px);
+  }
+
+  .compact {
+    padding: clamp(5px, 1vw, 9px);
+  }
+
+  .compact .tile-icon {
+    width: clamp(24px, 4vw, 36px);
+    height: clamp(24px, 4vw, 36px);
+    margin-bottom: 1px;
+  }
+
+  .compact-title {
+    font-size: clamp(12px, 2vw, 18px);
+    line-height: 1;
+  }
+
+  .compact-status,
+  .quick-status {
+    font-size: clamp(7px, 1.2vw, 10px);
+    line-height: 1.05;
+  }
+
+  .quick-tile {
+    padding: clamp(5px, .9vw, 8px);
+  }
+
+  .quick-tile .tile-icon {
+    top: 8%;
+    width: clamp(22px, 3.8vw, 34px);
+    height: clamp(22px, 3.8vw, 34px);
+  }
+
+  .quick-title {
+    font-size: clamp(11px, 1.9vw, 17px);
+  }
+
+  .temp-label,
+  .temp-value,
+  .temp-tile .quick-status {
+    margin-left: 36%;
+  }
+
+  .temp-label {
+    font-size: clamp(7px, 1.15vw, 10px);
+  }
+
+  .temp-value {
+    font-size: clamp(20px, 3.6vw, 31px);
+    line-height: 1;
+  }
+}
+
+@media (max-height: 520px) {
+  .topbar {
+    height: 16vh;
+    min-height: 52px;
+  }
+
+  .viewport {
+    height: 74vh;
+  }
+
+  .footer {
+    height: 10vh;
+  }
+
+  .tabs {
+    gap: clamp(18px, 4vw, 34px);
+  }
+
+  .tab {
+    font-size: clamp(18px, 3.7vw, 28px);
+    padding-bottom: 6px;
+  }
+
+  .status-strip {
+    padding-bottom: 7px;
+    font-size: clamp(11px, 1.8vw, 15px);
+  }
+
+  .page-home {
+    grid-template-rows: minmax(0, 1.68fr) minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .feature-grid,
+  .side-stack,
+  .quick-grid {
+    gap: 4px;
+  }
+
+  .touch-hint {
+    display: none;
+  }
+
+  .feature-icon {
+    top: 15%;
+  }
+
+  .a-mark {
+    font-size: clamp(58px, 10vw, 92px);
+  }
+
+  .quick-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .brand-mark {
+    width: 23px;
+    height: 23px;
+  }
+}
