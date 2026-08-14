@@ -13,7 +13,7 @@ from govee import GoveeClient, GoveeError
 
 load_dotenv()
 
-APP_VERSION = "1.1"
+APP_VERSION = "1.2"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 
@@ -35,26 +35,34 @@ DEVICE_NAMES = {
     "tv": os.getenv("TV_DEVICE_NAME", "TV"),
     "setup": os.getenv("SETUP_DEVICE_NAME", "Setup"),
 }
-RACK_TEMP_DEVICE = os.getenv("RACK_TEMP_DEVICE_NAME", "3 rack inside")
-RACK_TEMP_UNIT = os.getenv("RACK_TEMP_UNIT", "F").upper()
-POLL_TARGETS = list(DEVICE_NAMES.items()) + [("rack-temp", RACK_TEMP_DEVICE)]
+POLL_TARGETS = list(DEVICE_NAMES.items())
 
 _last_states = {}
 _started_at = time.time()
 
 NWS_LAT = os.getenv("NWS_LAT")
 NWS_LON = os.getenv("NWS_LON")
-NWS_USER_AGENT = os.getenv("NWS_USER_AGENT", "AetherControl/1.1 (local Raspberry Pi dashboard)")
+NWS_USER_AGENT = os.getenv("NWS_USER_AGENT", "AetherControl/1.2 (local Raspberry Pi dashboard)")
+NWS_HEADERS = {"User-Agent": NWS_USER_AGENT, "Accept": "application/geo+json"}
+_weather_cache = {"at": 0.0, "data": None}
+_alert_cache = {"at": 0.0, "data": None}
 
 
 def _weather_alerts():
+    now = time.time()
+    if _alert_cache["data"] is not None and now - _alert_cache["at"] < 60:
+        return _alert_cache["data"]
+
     if not NWS_LAT or not NWS_LON:
-        return {"configured": False, "alerts": []}
+        data = {"configured": False, "alerts": []}
+        _alert_cache.update(at=now, data=data)
+        return data
+
     try:
         r = requests.get(
             "https://api.weather.gov/alerts/active",
             params={"point": f"{NWS_LAT},{NWS_LON}"},
-            headers={"User-Agent": NWS_USER_AGENT, "Accept": "application/geo+json"},
+            headers=NWS_HEADERS,
             timeout=8,
         )
         r.raise_for_status()
@@ -74,9 +82,68 @@ def _weather_alerts():
                 "expires": prop.get("expires"),
             })
         alerts.sort(key=lambda a: rank.get(a["severity"], 0), reverse=True)
-        return {"configured": True, "alerts": alerts}
+        data = {"configured": True, "alerts": alerts}
     except Exception as exc:
-        return {"configured": True, "alerts": [], "error": str(exc)}
+        data = {"configured": True, "alerts": [], "error": str(exc)}
+
+    _alert_cache.update(at=now, data=data)
+    return data
+
+
+def _weather_snapshot():
+    now = time.time()
+    if _weather_cache["data"] is not None and now - _weather_cache["at"] < 300:
+        return _weather_cache["data"]
+
+    if not NWS_LAT or not NWS_LON:
+        data = {"configured": False, "online": False, "error": "NWS location is not configured"}
+        _weather_cache.update(at=now, data=data)
+        return data
+
+    try:
+        point = requests.get(
+            f"https://api.weather.gov/points/{NWS_LAT},{NWS_LON}",
+            headers=NWS_HEADERS,
+            timeout=8,
+        )
+        point.raise_for_status()
+        props = point.json().get("properties", {})
+        hourly_url = props.get("forecastHourly")
+        if not hourly_url:
+            raise RuntimeError("NWS points response did not include forecastHourly")
+
+        forecast = requests.get(hourly_url, headers=NWS_HEADERS, timeout=8)
+        forecast.raise_for_status()
+        periods = forecast.json().get("properties", {}).get("periods", [])
+        if not periods:
+            raise RuntimeError("NWS hourly forecast returned no periods")
+
+        period = periods[0]
+        rh = (period.get("relativeHumidity") or {}).get("value")
+        pop = (period.get("probabilityOfPrecipitation") or {}).get("value")
+        data = {
+            "configured": True,
+            "online": True,
+            "temperature": period.get("temperature"),
+            "unit": period.get("temperatureUnit") or "F",
+            "humidity": rh,
+            "precipitation_probability": pop,
+            "condition": period.get("shortForecast") or "Weather",
+            "wind": period.get("windSpeed") or "",
+            "icon": period.get("icon") or "",
+            "updated": period.get("startTime"),
+        }
+    except Exception as exc:
+        stale = _weather_cache.get("data")
+        if stale and stale.get("online"):
+            data = dict(stale)
+            data["stale"] = True
+            data["error"] = str(exc)
+        else:
+            data = {"configured": True, "online": False, "error": str(exc)}
+
+    _weather_cache.update(at=now, data=data)
+    return data
 
 
 def _internet_online():
@@ -98,7 +165,7 @@ def _read_one(key, name):
 
 def _record_state_changes(states):
     for key, state in states.items():
-        if key == "rack-temp" or "error" in state:
+        if "error" in state:
             continue
         current = (state.get("online"), state.get("power"))
         previous = _last_states.get(key)
@@ -152,10 +219,6 @@ def dashboard():
 
     _record_state_changes(states)
 
-    sensor = states.get("rack-temp", {})
-    temp = sensor.get("temperature")
-    humidity = sensor.get("humidity")
-
     devices = {}
     for key, name in DEVICE_NAMES.items():
         state = states.get(key, {"name": name, "online": False})
@@ -166,15 +229,28 @@ def dashboard():
             "error": state.get("error"),
         }
 
+    weather = _weather_snapshot()
+    alerts = _weather_alerts()
+    top_alert = (alerts.get("alerts") or [None])[0]
+
+    # Keep the legacy "rack" shape for v1's touchscreen JavaScript. In v1.2
+    # the bottom-right tile is intentionally the outside NWS weather tile.
+    legacy_weather_tile = {
+        "online": bool(weather.get("online")),
+        "temperature": weather.get("temperature"),
+        "humidity": weather.get("humidity"),
+        "unit": weather.get("unit", "F"),
+        "error": weather.get("error"),
+    }
+
     return jsonify(
         {
             "devices": devices,
-            "rack": {
-                "online": bool(sensor.get("online")),
-                "temperature": temp,
-                "humidity": humidity,
-                "unit": RACK_TEMP_UNIT,
-                "error": sensor.get("error"),
+            "rack": legacy_weather_tile,
+            "weather": {
+                **weather,
+                "alert_count": len(alerts.get("alerts") or []),
+                "top_alert": top_alert,
             },
             "network": {"internet": _internet_online()},
             "version": APP_VERSION,
@@ -231,6 +307,17 @@ def set_device_power(key):
 @app.get("/api/weather/alerts")
 def weather_alerts():
     return jsonify(_weather_alerts())
+
+
+@app.get("/api/weather")
+def weather_status():
+    weather = _weather_snapshot()
+    alerts = _weather_alerts()
+    return jsonify({
+        **weather,
+        "alerts": alerts.get("alerts") or [],
+        "alert_count": len(alerts.get("alerts") or []),
+    })
 
 
 @app.get("/api/logs")
