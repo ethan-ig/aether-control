@@ -3,12 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#dff5ff">
+  <meta name="theme-color" content="#050d18">
   <title>Aether Control</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=version) }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/layout-fix.css', v=version) }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-blue.css', v=version) }}">
 </head>
-<body>
+<body class="dark-mode">
   <div class="shell" id="shell">
     <div class="ambient ambient-a"></div>
     <div class="ambient ambient-b"></div>
@@ -88,16 +89,16 @@
               <div class="quick-title">Media</div>
               <div class="quick-status"><span class="quick-dot muted"></span><span>next</span></div>
             </button>
-            <button class="tile green-tile quick-tile" data-action="scenes-placeholder">
-              <svg class="tile-icon" viewBox="0 0 64 64" aria-hidden="true"><rect x="10" y="19" width="44" height="32" rx="2"/><path d="M13 19l7-9 8 9 8-9 8 9 7-9"/><path d="M10 29h44"/></svg>
-              <div class="quick-title">Scenes</div>
-              <div class="quick-status"><span class="quick-dot muted"></span><span>next</span></div>
+            <button class="tile green-tile quick-tile update-tile" id="updateButton" data-action="update">
+              <svg class="tile-icon" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 9v30M20 28l12 12 12-12M13 48h38v7H13z"/></svg>
+              <div class="quick-title">Update</div>
+              <div class="quick-status"><span class="quick-dot" id="updateDot"></span><span id="updateText">git pull</span></div>
             </button>
             <button class="tile green-tile quick-tile temp-tile" data-action="temp">
-              <svg class="tile-icon thermometer" viewBox="0 0 64 64" aria-hidden="true"><path d="M27 13a5 5 0 0110 0v25a12 12 0 11-10 0z"/><path d="M32 19v25"/></svg>
-              <div class="temp-label">Rack Temp</div>
+              <svg class="tile-icon thermometer" viewBox="0 0 64 64" aria-hidden="true"><path d="M17 39c5-12 12-19 21-19 5 0 10 2 14 6M14 43h38M20 51h26"/><path d="M22 25a13 13 0 0121-8"/></svg>
+              <div class="temp-label">Weather</div>
               <div class="temp-value" id="rackTemp">--°</div>
-              <div class="quick-status"><span class="quick-dot" id="tempDot"></span><span id="humidityText">--% RH</span></div>
+              <div class="quick-status"><span class="quick-dot" id="tempDot"></span><span id="humidityText">loading</span></div>
             </button>
           </div>
         </section>
