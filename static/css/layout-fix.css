@@ -33,6 +33,50 @@
   overflow: hidden;
 }
 
+/* v1.2: the old rack-temperature square is now the outside NWS weather tile. */
+.temp-tile {
+  background: linear-gradient(145deg, #48a9df, #277db7 52%, #175a8d);
+}
+
+.temp-label {
+  font-size: 0 !important;
+}
+
+.temp-label::after {
+  content: "Weather";
+  font-size: clamp(9px, 1.55vw, 13px);
+}
+
+/* While an undisismissed NWS alert is on screen, make the weather square read
+   like an alarm tile too. The full warning overlay remains the detailed view. */
+body:has(.weather-alert.show) .temp-tile {
+  background: linear-gradient(145deg, #ef5a47, #c83227 55%, #8f1e19);
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.72), var(--shadow);
+}
+
+body:has(.weather-alert.show) .temp-label::after {
+  content: "NWS ALERT";
+}
+
+body:has(.weather-alert.show) .temp-tile .quick-status {
+  font-size: 0 !important;
+}
+
+body:has(.weather-alert.show) .temp-tile .quick-status::after {
+  content: "ACTIVE WARNING";
+  font-size: clamp(7px, 1.2vw, 10px);
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+body.dark-mode .temp-tile {
+  background: linear-gradient(145deg, #174a6a, #123b59 55%, #0b2a41);
+}
+
+body.dark-mode:has(.weather-alert.show) .temp-tile {
+  background: linear-gradient(145deg, #8b2922, #661c18 55%, #45110f);
+}
+
 /* The physical Aether Control panel is short enough that percentage heights
    plus the inter-row gap could make the rows collide. These rules reserve
    space explicitly for each row and tighten type/icons before anything can
@@ -125,7 +169,7 @@
     margin-left: 36%;
   }
 
-  .temp-label {
+  .temp-label::after {
     font-size: clamp(7px, 1.15vw, 10px);
   }
 
