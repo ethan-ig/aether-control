@@ -1,5 +1,7 @@
 import os
+import shutil
 import socket
+import subprocess
 import time
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -13,7 +15,7 @@ from govee import GoveeClient, GoveeError
 
 load_dotenv()
 
-APP_VERSION = "1.2"
+APP_VERSION = "1.3"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 
@@ -42,7 +44,7 @@ _started_at = time.time()
 
 NWS_LAT = os.getenv("NWS_LAT")
 NWS_LON = os.getenv("NWS_LON")
-NWS_USER_AGENT = os.getenv("NWS_USER_AGENT", "AetherControl/1.2 (local Raspberry Pi dashboard)")
+NWS_USER_AGENT = os.getenv("NWS_USER_AGENT", "AetherControl/1.3 (local Raspberry Pi dashboard)")
 NWS_HEADERS = {"User-Agent": NWS_USER_AGENT, "Accept": "application/geo+json"}
 _weather_cache = {"at": 0.0, "data": None}
 _alert_cache = {"at": 0.0, "data": None}
@@ -198,6 +200,18 @@ def _system_payload():
         return {"error": str(exc), "version": APP_VERSION}
 
 
+def _git_head(git_bin):
+    result = subprocess.run(
+        [git_bin, "rev-parse", "HEAD"],
+        cwd=BASE_DIR,
+        capture_output=True,
+        text=True,
+        timeout=8,
+        check=False,
+    )
+    return result.stdout.strip() if result.returncode == 0 else None
+
+
 @app.get("/")
 def index():
     return render_template("index.html", version=APP_VERSION)
@@ -233,8 +247,6 @@ def dashboard():
     alerts = _weather_alerts()
     top_alert = (alerts.get("alerts") or [None])[0]
 
-    # Keep the legacy "rack" shape for v1's touchscreen JavaScript. In v1.2
-    # the bottom-right tile is intentionally the outside NWS weather tile.
     legacy_weather_tile = {
         "online": bool(weather.get("online")),
         "temperature": weather.get("temperature"),
@@ -317,6 +329,60 @@ def weather_status():
         **weather,
         "alerts": alerts.get("alerts") or [],
         "alert_count": len(alerts.get("alerts") or []),
+    })
+
+
+@app.post("/api/update/pull")
+def update_pull():
+    git_bin = shutil.which("git")
+    if not git_bin:
+        log.add("error", "Updater", "git executable was not found")
+        return jsonify({"ok": False, "error": "git is not installed"}), 500
+
+    if not os.path.isdir(os.path.join(BASE_DIR, ".git")):
+        log.add("error", "Updater", "Project directory is not a Git repository")
+        return jsonify({"ok": False, "error": "Aether Control is not a Git repository"}), 409
+
+    before = _git_head(git_bin)
+    log.add("info", "Updater", "git pull --ff-only requested from touchscreen")
+
+    try:
+        result = subprocess.run(
+            [git_bin, "pull", "--ff-only"],
+            cwd=BASE_DIR,
+            capture_output=True,
+            text=True,
+            timeout=45,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        log.add("error", "Updater", "git pull timed out")
+        return jsonify({"ok": False, "error": "git pull timed out"}), 504
+    except Exception as exc:
+        log.add("error", "Updater", f"git pull failed: {exc}")
+        return jsonify({"ok": False, "error": str(exc)}), 500
+
+    output = "\n".join(part.strip() for part in (result.stdout, result.stderr) if part.strip()).strip()
+    if result.returncode != 0:
+        message = output or f"git pull exited with code {result.returncode}"
+        log.add("error", "Updater", message[:500])
+        return jsonify({"ok": False, "error": message}), 500
+
+    after = _git_head(git_bin)
+    changed = bool(before and after and before != after)
+    if changed:
+        log.add("success", "Updater", f"Pulled update {before[:7]} -> {after[:7]}")
+    else:
+        log.add("success", "Updater", "Repository already up to date")
+
+    return jsonify({
+        "ok": True,
+        "changed": changed,
+        "before": before,
+        "after": after,
+        "output": output,
+        "message": "Update downloaded" if changed else "Already up to date",
+        "restart_required": changed,
     })
 
 
