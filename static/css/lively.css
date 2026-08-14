@@ -1,0 +1,129 @@
+/* Aether Control v1.4 lively motion layer.
+   Keep animation compositor-friendly for the Raspberry Pi touchscreen. */
+
+.tile {
+  isolation: isolate;
+}
+
+/* Slow moving glass reflection across every tile. */
+.tile::after {
+  content: "";
+  position: absolute;
+  z-index: 6;
+  top: -45%;
+  bottom: -45%;
+  left: -42%;
+  width: 34%;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(-25%, 0, 0) rotate(14deg);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255,255,255,.025) 20%,
+    rgba(237,220,255,.16) 50%,
+    rgba(192,132,252,.05) 72%,
+    transparent
+  );
+  animation: tile-scan 8.5s ease-in-out infinite;
+}
+
+.quick-grid .tile:nth-child(1)::after { animation-delay: -1.3s; }
+.quick-grid .tile:nth-child(2)::after { animation-delay: -3.1s; }
+.quick-grid .tile:nth-child(3)::after { animation-delay: -4.8s; }
+.quick-grid .tile:nth-child(4)::after { animation-delay: -6.4s; }
+.quick-grid .tile:nth-child(5)::after { animation-delay: -7.7s; }
+.side-stack .tile:nth-child(1)::after { animation-delay: -2.2s; }
+.side-stack .tile:nth-child(2)::after { animation-delay: -5.5s; }
+.aether-tile::after { animation-delay: -4.1s; }
+.rack-tile::after { animation-delay: -6.8s; }
+
+@keyframes tile-scan {
+  0%, 58% {
+    opacity: 0;
+    transform: translate3d(-35%, 0, 0) rotate(14deg);
+  }
+  65% { opacity: .72; }
+  79% { opacity: .35; }
+  88%, 100% {
+    opacity: 0;
+    transform: translate3d(430%, 0, 0) rotate(14deg);
+  }
+}
+
+/* Status LEDs breathe softly instead of sitting perfectly still. */
+.power-tile.state-on .state-dot,
+.mini-status.online .mini-dot,
+.quick-dot:not(.offline):not(.muted) {
+  animation: status-breathe 2.7s ease-in-out infinite;
+}
+
+@keyframes status-breathe {
+  0%, 100% { opacity: .72; transform: scale(.88); }
+  50% { opacity: 1; transform: scale(1.18); }
+}
+
+/* Make the Aether glyph feel powered, not static. */
+.a-mark {
+  animation: a-mark-live 4.6s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@keyframes a-mark-live {
+  0%, 100% { transform: scale(.985); filter: brightness(.92); }
+  50% { transform: scale(1.02); filter: brightness(1.12); }
+}
+
+/* Very small parallax-like drift in the server art. */
+.rack-art {
+  animation: rack-drift 7s ease-in-out infinite;
+}
+
+@keyframes rack-drift {
+  0%, 100% { transform: translate3d(0,0,0); opacity: .74; }
+  50% { transform: translate3d(2px,-1px,0); opacity: .9; }
+}
+
+/* The update tile gets a distinct idle heartbeat so it is easy to spot. */
+.update-tile:not(.busy) .tile-icon {
+  animation: update-idle 3.8s ease-in-out infinite;
+}
+
+@keyframes update-idle {
+  0%, 100% { opacity: .78; filter: drop-shadow(0 0 2px rgba(232,121,249,.18)); }
+  50% { opacity: 1; filter: drop-shadow(0 0 7px rgba(232,121,249,.58)); }
+}
+
+/* Weather icon drifts just enough to read as live data. */
+.temp-tile .tile-icon {
+  animation: weather-float 5.2s ease-in-out infinite;
+}
+
+@keyframes weather-float {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-2px); }
+}
+
+/* Preserve the update spinner from the theme while the tile is busy. */
+.update-tile.busy .tile-icon {
+  animation: update-spin 1.1s linear infinite !important;
+}
+
+/* Touch feedback should feel snappy and slightly luminous. */
+.tile:active {
+  transition-duration: 70ms;
+  filter: brightness(1.22) saturate(1.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile::after,
+  .state-dot,
+  .mini-dot,
+  .quick-dot,
+  .a-mark,
+  .rack-art,
+  .update-tile .tile-icon,
+  .temp-tile .tile-icon {
+    animation: none !important;
+  }
+}
