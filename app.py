@@ -2,6 +2,7 @@ import os
 import shutil
 import socket
 import subprocess
+import threading
 import time
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -15,7 +16,7 @@ from govee import GoveeClient, GoveeError
 
 load_dotenv()
 
-APP_VERSION = "1.3"
+APP_VERSION = "1.4"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 
@@ -44,7 +45,7 @@ _started_at = time.time()
 
 NWS_LAT = os.getenv("NWS_LAT")
 NWS_LON = os.getenv("NWS_LON")
-NWS_USER_AGENT = os.getenv("NWS_USER_AGENT", "AetherControl/1.3 (local Raspberry Pi dashboard)")
+NWS_USER_AGENT = os.getenv("NWS_USER_AGENT", "AetherControl/1.4 (local Raspberry Pi dashboard)")
 NWS_HEADERS = {"User-Agent": NWS_USER_AGENT, "Accept": "application/geo+json"}
 _weather_cache = {"at": 0.0, "data": None}
 _alert_cache = {"at": 0.0, "data": None}
@@ -212,6 +213,29 @@ def _git_head(git_bin):
     return result.stdout.strip() if result.returncode == 0 else None
 
 
+def _reboot_pi_after_update():
+    time.sleep(1.75)
+    systemctl_bin = shutil.which("systemctl") or "/usr/bin/systemctl"
+    sudo_bin = shutil.which("sudo")
+    command = [systemctl_bin, "reboot"]
+    if sudo_bin:
+        command = [sudo_bin, "-n", systemctl_bin, "reboot"]
+
+    try:
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            timeout=8,
+            check=False,
+        )
+        if result.returncode != 0:
+            message = (result.stderr or result.stdout or "reboot command failed").strip()
+            log.add("error", "Updater", f"Automatic reboot failed: {message[:400]}")
+    except Exception as exc:
+        log.add("error", "Updater", f"Automatic reboot failed: {exc}")
+
+
 @app.get("/")
 def index():
     return render_template("index.html", version=APP_VERSION)
@@ -375,14 +399,18 @@ def update_pull():
     else:
         log.add("success", "Updater", "Repository already up to date")
 
+    log.add("info", "Updater", "Automatic Pi reboot scheduled")
+    threading.Thread(target=_reboot_pi_after_update, daemon=True).start()
+
     return jsonify({
         "ok": True,
         "changed": changed,
         "before": before,
         "after": after,
         "output": output,
-        "message": "Update downloaded" if changed else "Already up to date",
-        "restart_required": changed,
+        "message": "Update downloaded; rebooting" if changed else "Already up to date; rebooting",
+        "restart_required": False,
+        "reboot_scheduled": True,
     })
 
 
