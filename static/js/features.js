@@ -26,12 +26,24 @@
   const ambientAether = document.getElementById('ambientAether');
   const ambientNetwork = document.getElementById('ambientNetwork');
 
+  const serverTile = document.querySelector('.power-tile[data-device="server-rack"]');
+  const confirmModal = document.getElementById('confirmModal');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalCopy = document.getElementById('modalCopy');
+  const modalConfirm = document.getElementById('modalConfirm');
+  const modalCancel = document.getElementById('modalCancel');
+
   let homeDevices = [];
   let updateState = null;
   let ambientData = null;
   let idleTimer = null;
   let ambientPollTimer = null;
+  let idracPendingOff = false;
   const IDLE_MS = 120000;
+  const WEATHER_CLASSES = [
+    'weather-clear', 'weather-cloudy', 'weather-rain', 'weather-storm',
+    'weather-snow', 'weather-fog', 'weather-wind', 'weather-neutral', 'weather-night'
+  ];
 
   function featureToast(message, isError = false) {
     const toast = document.getElementById('toast');
@@ -45,6 +57,115 @@
 
   function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+  }
+
+  function weatherClassFor(condition) {
+    const text = String(condition || '').toLowerCase();
+    if (/thunder|storm|tornado|hail/.test(text)) return 'weather-storm';
+    if (/snow|sleet|blizzard|freezing|ice/.test(text)) return 'weather-snow';
+    if (/rain|shower|drizzle/.test(text)) return 'weather-rain';
+    if (/fog|mist|haze|smoke/.test(text)) return 'weather-fog';
+    if (/wind|breezy|gust/.test(text)) return 'weather-wind';
+    if (/cloud|overcast/.test(text)) return 'weather-cloudy';
+    if (/clear|sunny|fair/.test(text)) return 'weather-clear';
+    return 'weather-neutral';
+  }
+
+  function applyWeatherTheme(weather) {
+    WEATHER_CLASSES.forEach(cls => document.body.classList.remove(cls));
+    document.body.classList.add(weatherClassFor(weather?.condition));
+    const hour = new Date().getHours();
+    if (hour >= 20 || hour < 6) document.body.classList.add('weather-night');
+    document.body.dataset.weather = String(weather?.condition || 'weather').toLowerCase();
+  }
+
+  async function refreshWeatherTheme() {
+    try {
+      const res = await fetch('/api/weather', {cache:'no-store'});
+      if (!res.ok) return;
+      const weather = await res.json();
+      applyWeatherTheme(weather);
+    } catch (_) {}
+  }
+
+  function resetIdracModal() {
+    idracPendingOff = false;
+    if (modalConfirm) modalConfirm.textContent = 'power off';
+  }
+
+  async function sendIdracPower(turnOn) {
+    if (!serverTile || serverTile.classList.contains('busy')) return;
+    serverTile.classList.add('busy');
+    const stateText = serverTile.querySelector('.state-text');
+    if (stateText) stateText.textContent = turnOn ? 'IDRAC POWER ON…' : 'IDRAC SHUTDOWN…';
+    featureToast(turnOn ? 'Sending iDRAC power-on…' : 'Sending graceful shutdown through iDRAC…');
+
+    try {
+      const res = await fetch('/api/device/server-rack/power', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({on:turnOn})
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      featureToast(turnOn ? 'Overworld: iDRAC power-on sent' : 'Overworld: graceful iDRAC shutdown sent');
+      setTimeout(refreshAmbientData, 1200);
+    } catch (err) {
+      featureToast(`iDRAC: ${err.message}`, true);
+    } finally {
+      serverTile.classList.remove('busy');
+    }
+  }
+
+  if (serverTile) {
+    const title = serverTile.querySelector('.tile-title');
+    const hint = serverTile.querySelector('.touch-hint');
+    if (title) title.textContent = 'Overworld';
+    if (hint) hint.textContent = 'iDRAC power';
+    serverTile.dataset.label = 'Overworld';
+
+    serverTile.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (serverTile.classList.contains('busy')) return;
+      if (serverTile.classList.contains('state-error')) {
+        featureToast('Overworld iDRAC is unreachable or not configured', true);
+        return;
+      }
+      if (serverTile.classList.contains('state-on')) {
+        idracPendingOff = true;
+        if (modalTitle) modalTitle.textContent = 'Shut down Overworld?';
+        if (modalCopy) modalCopy.textContent = 'This sends a graceful shutdown through iDRAC. The rack outlet, firewall, and the rest of the rack stay powered.';
+        if (modalConfirm) modalConfirm.textContent = 'shut down server';
+        confirmModal?.classList.add('show');
+        confirmModal?.setAttribute('aria-hidden', 'false');
+        return;
+      }
+      sendIdracPower(true);
+    }, true);
+
+    modalConfirm?.addEventListener('click', event => {
+      if (!idracPendingOff) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      confirmModal?.classList.remove('show');
+      confirmModal?.setAttribute('aria-hidden', 'true');
+      resetIdracModal();
+      sendIdracPower(false);
+    }, true);
+
+    modalCancel?.addEventListener('click', event => {
+      if (!idracPendingOff) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      confirmModal?.classList.remove('show');
+      confirmModal?.setAttribute('aria-hidden', 'true');
+      resetIdracModal();
+    }, true);
+  }
+
+  if (ambientRack?.parentElement?.querySelector('span')) {
+    ambientRack.parentElement.querySelector('span').textContent = 'Overworld';
   }
 
   async function loadHomeDevices() {
@@ -63,11 +184,13 @@
       homeGrid.innerHTML = homeDevices.map((device, index) => {
         const stateClass = device.online === false ? 'offline' : device.power === 1 ? 'on' : 'off';
         const stateText = device.online === false ? 'offline' : device.power === 1 ? 'on' : 'off';
+        const kind = device.known_key === 'server-rack' ? 'idrac' : (device.category || device.sku || 'device');
+        const name = device.known_key === 'server-rack' ? 'Overworld' : device.name;
         return `<button class="home-device-card ${stateClass}" data-home-index="${index}">
-          <div class="home-device-kind">${escapeHtml(device.category || device.sku || 'device')}</div>
-          <div class="home-device-name">${escapeHtml(device.name)}</div>
+          <div class="home-device-kind">${escapeHtml(kind)}</div>
+          <div class="home-device-name">${escapeHtml(name)}</div>
           <div class="home-device-meta">
-            <span>${escapeHtml(device.sku || '')}</span>
+            <span>${escapeHtml(device.known_key === 'server-rack' ? 'REDFISH' : (device.sku || ''))}</span>
             <span class="home-device-state"><i></i>${escapeHtml(stateText)}</span>
           </div>
         </button>`;
@@ -106,6 +229,15 @@
     }
 
     const turnOn = device.power !== 1;
+
+    if (device.known_key === 'server-rack') {
+      closeHome();
+      setTimeout(() => {
+        if (turnOn) sendIdracPower(true);
+        else serverTile?.click();
+      }, 120);
+      return;
+    }
 
     if (!turnOn && device.critical && device.known_key) {
       const primary = document.querySelector(`.power-tile[data-device="${device.known_key}"]`);
@@ -280,6 +412,7 @@
     if (!ambientData) return;
 
     const weather = ambientData.weather || ambientData.rack || {};
+    applyWeatherTheme(weather);
     ambientTemp.textContent = weather.online && weather.temperature != null ? `${Math.round(Number(weather.temperature))}°${weather.unit || 'F'}` : '--°';
     ambientCondition.textContent = weather.condition || (weather.online ? 'NWS weather' : 'weather offline');
 
@@ -299,6 +432,7 @@
       const res = await fetch('/api/dashboard', {cache:'no-store'});
       if (!res.ok) return;
       ambientData = await res.json();
+      applyWeatherTheme(ambientData.weather || ambientData.rack || {});
       renderAmbient();
     } catch (_) {}
   }
@@ -345,5 +479,7 @@
   setTimeout(() => checkUpdate(true), 9000);
   setInterval(() => checkUpdate(true), 15 * 60 * 1000);
   setTimeout(refreshAmbientData, 2500);
+  setTimeout(refreshWeatherTheme, 1600);
+  setInterval(refreshWeatherTheme, 5 * 60 * 1000);
   resetIdleTimer();
 })();
