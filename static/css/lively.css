@@ -1,4 +1,4 @@
-/* Aether Control v1.4 lively motion layer.
+/* Aether Control lively motion layer.
    Keep animation compositor-friendly for the Raspberry Pi touchscreen. */
 
 .tile {
@@ -115,6 +115,125 @@
   filter: brightness(1.22) saturate(1.08);
 }
 
+/* Weather v2. features.js assigns the weather-* body class from the live NWS
+   short forecast. These selectors intentionally outrank features.css so the
+   richer effects win without changing dashboard geometry. */
+html body.weather-rain::before,
+html body.weather-storm::before {
+  inset: -24%;
+  opacity: .58;
+  filter: none;
+  background-image:
+    repeating-linear-gradient(103deg, transparent 0 13px, rgba(238,220,255,.40) 14px, transparent 16px 29px),
+    repeating-linear-gradient(103deg, transparent 0 27px, rgba(180,132,235,.30) 28px, transparent 30px 52px),
+    repeating-linear-gradient(103deg, transparent 0 43px, rgba(137,91,195,.20) 44px, transparent 46px 81px);
+  background-size: 107px 214px, 173px 284px, 239px 358px;
+  animation: weather-rain-near-v2 .56s linear infinite;
+}
+
+html body.weather-rain::after {
+  inset: -18%;
+  opacity: .36;
+  filter: blur(.25px);
+  background:
+    repeating-linear-gradient(103deg, transparent 0 22px, rgba(195,157,234,.18) 23px, transparent 25px 45px),
+    radial-gradient(ellipse at 50% 108%, rgba(120,58,170,.20), transparent 43%),
+    linear-gradient(180deg, rgba(32,11,49,.14), rgba(4,1,8,.38));
+  background-size: 151px 205px, 100% 100%, 100% 100%;
+  animation: weather-rain-far-v2 1.08s linear infinite;
+}
+
+@keyframes weather-rain-near-v2 {
+  to { transform: translate3d(-46px, 164px, 0); }
+}
+
+@keyframes weather-rain-far-v2 {
+  to { transform: translate3d(-27px, 112px, 0); }
+}
+
+html body.weather-storm::after {
+  inset: 0;
+  opacity: 0;
+  filter: none;
+  background:
+    radial-gradient(circle at 70% 7%, rgba(249,240,255,.95), rgba(193,117,255,.27) 21%, transparent 49%),
+    linear-gradient(180deg, rgba(48,15,72,.20), rgba(4,1,8,.34));
+  animation: weather-lightning-v2 9.4s steps(1,end) infinite;
+}
+
+@keyframes weather-lightning-v2 {
+  0%, 69%, 72%, 75%, 100% { opacity: 0; }
+  70% { opacity: .78; }
+  73% { opacity: .22; }
+  74% { opacity: .92; }
+}
+
+html body.weather-cloudy::before {
+  opacity: .42;
+  filter: blur(26px);
+  background:
+    radial-gradient(ellipse at 12% 29%, rgba(190,155,222,.23), transparent 28%),
+    radial-gradient(ellipse at 57% 18%, rgba(143,104,184,.24), transparent 35%),
+    radial-gradient(ellipse at 86% 71%, rgba(100,68,137,.26), transparent 34%);
+  animation: weather-clouds-v2 19s ease-in-out infinite alternate;
+}
+
+@keyframes weather-clouds-v2 {
+  to { transform: translate3d(38px, -8px, 0) scale(1.055); opacity: .54; }
+}
+
+html body.weather-snow::before {
+  opacity: .64;
+  background-image:
+    radial-gradient(circle, rgba(250,246,255,.88) 0 1.7px, transparent 2px),
+    radial-gradient(circle, rgba(220,193,250,.62) 0 1.1px, transparent 1.5px),
+    radial-gradient(circle, rgba(177,130,226,.46) 0 .8px, transparent 1.2px);
+  background-size: 51px 51px, 83px 83px, 119px 119px;
+  animation: weather-snow-v2 7.6s linear infinite;
+}
+
+@keyframes weather-snow-v2 {
+  to { transform: translate3d(19px, 112px, 0); }
+}
+
+html body.weather-fog::before {
+  opacity: .54;
+  filter: blur(18px);
+  background:
+    repeating-linear-gradient(180deg, transparent 0 9%, rgba(210,188,228,.13) 15%, transparent 27%),
+    radial-gradient(ellipse at 50% 52%, rgba(159,128,183,.10), transparent 62%);
+  animation: weather-fog-v2 14s ease-in-out infinite alternate;
+}
+
+@keyframes weather-fog-v2 {
+  to { transform: translate3d(52px, 0, 0); opacity: .67; }
+}
+
+html body.weather-wind::before {
+  opacity: .31;
+  background:
+    repeating-linear-gradient(171deg, transparent 0 38px, rgba(215,180,249,.19) 39px, transparent 42px 74px),
+    repeating-linear-gradient(171deg, transparent 0 67px, rgba(163,111,217,.11) 68px, transparent 70px 126px);
+  animation: weather-wind-v2 2.7s linear infinite;
+}
+
+@keyframes weather-wind-v2 {
+  to { transform: translate3d(148px, -18px, 0); }
+}
+
+html body.weather-clear.weather-night::before {
+  opacity: .50;
+  background-image:
+    radial-gradient(circle, rgba(245,232,255,.88) 0 1px, transparent 1.35px),
+    radial-gradient(circle, rgba(195,137,247,.62) 0 1px, transparent 1.25px);
+  background-size: 69px 69px, 109px 109px;
+  animation: weather-stars-v2 18s ease-in-out infinite alternate;
+}
+
+@keyframes weather-stars-v2 {
+  to { transform: translate3d(-5px, 4px, 0); opacity: .68; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .tile::after,
   .state-dot,
@@ -123,7 +242,16 @@
   .a-mark,
   .rack-art,
   .update-tile .tile-icon,
-  .temp-tile .tile-icon {
+  .temp-tile .tile-icon,
+  html body.weather-rain::before,
+  html body.weather-rain::after,
+  html body.weather-storm::before,
+  html body.weather-storm::after,
+  html body.weather-cloudy::before,
+  html body.weather-snow::before,
+  html body.weather-fog::before,
+  html body.weather-wind::before,
+  html body.weather-clear.weather-night::before {
     animation: none !important;
   }
 }
